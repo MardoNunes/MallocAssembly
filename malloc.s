@@ -1,6 +1,8 @@
 .section .data
-    INICIO_HEAP .quad 0
-    TOPO_HEAP .quad 0
+
+    INICIO_HEAP: .quad 0
+    TOPO_HEAP: .quad 0
+
 .section .text
 .globl _start
 
@@ -45,3 +47,20 @@ liberaMem:
 
 
     
+_start:
+
+call iniciaAlocador 
+
+# fazer alocações e liberações da memoriaaqui
+# uso push para empilhar o num_bytes
+# ai usar a logica de manipulção de deslocamento usando regs
+
+
+
+
+
+call finalizaAlocador
+
+movq $60, %rax
+movq $0, %rdi
+syscall
