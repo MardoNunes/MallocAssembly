@@ -3,6 +3,8 @@
     INICIO_HEAP: .quad 0
     TOPO_HEAP: .quad 0      # o topo é o final do heap
     END_A: .quad 0          # guarda o endereço do primeiro bloco alocado
+    END_B: .quad 0
+    TESTE: .quad 0
     str1: .string "Tamanho da heap: % s \n"
 
 .section .text
@@ -43,13 +45,15 @@ finalizaAlocador:
 liberaMem:
     push %rbp
     movq %rsp, %rbp
-    movq 16(%rbp), %r10 # movo o parametro para %r10, o parametro passado é o comeco do bloco
+    movq 16(%rbp), %r10     # guardo o endereço passado como parametro
 
-    movq $0, -16(%r10)  #-16 é onde esta os bit de dirt, coloco zero para dizer q o bloco esta livre
-    movq -16(%r10), %rbx # movo o dirt para %rbx
+    # não vai liberar todo o bloco, vai apenas indicar que posso usa-lo para outro fim
+    movq $0, -16(%r10)      # indico que o bloco está livre apenas
+    movq -16(%r10), %rbx
 
     popq %rbp
     ret
+
 
 
 alocaMem:
@@ -79,6 +83,7 @@ alocaMem:
 
 
 _start:
+    movq $1, TESTE
 
     call iniciaAlocador 
 
@@ -88,6 +93,18 @@ _start:
     addq $8, %rsp
     movq %rax, END_A       # guarda o endereco do primeiro bloco alocado
 
+    movq $50, %rbx           # empilha num_bytes
+    pushq %rbx  
+    call alocaMem
+    addq $8, %rsp
+    movq %rax, END_B       # guarda o endereco do primeiro bloco alocado
+
+
+    movq END_B, %rbx
+    push %rbx
+    call liberaMem
+    addq $8, %rsp
+    movq %rax, END_B
 
 
     call finalizaAlocador
