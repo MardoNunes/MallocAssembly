@@ -80,7 +80,10 @@ alocaMem:
     popq %rbp
     ret
 
-
+fusao:
+# fazer fusao de nos livres, se a espaços consectuvos vazios, juntar os doi como um
+# a cada liberação chamar a fusao e vereficar 
+# e implementar a fusao
 
 _start:
     movq $1, TESTE
