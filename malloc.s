@@ -81,9 +81,47 @@ alocaMem:
     ret
 
 fusao:
-# fazer fusao de nos livres, se a espaços consectuvos vazios, juntar os doi como um
+# fazer fusao de nos livres, se a espaços consectuvos vazios, juntar os dois como um
 # a cada liberação chamar a fusao e vereficar 
 # e implementar a fusao
+	pushq %rbp
+	movq %rsp, %rbp
+
+	movq INICIO_HEAP, %r8	# passo o comeco da heap
+	loop:
+		cmpq $0, (%r8)		# comparo se o bit de dirty é zero
+		je verifica
+		movq 16(%r8), %r9
+		addq $16, %r9
+		addq %r9, %r8
+		jmp loop
+
+
+
+	verifica:
+		movq %r8, %r11		# pego o endereco de r8
+		movq 16(%r11), %r9	# pego o tamanho do bloco atual para pular
+		addq $16, %r9		# somo os 16 bytes de gerenciamento
+		addq %r9, %r11		# teoricamente, r11 possui agora o inicio do proximo bloco
+		movq 16(%r11), %r9	# o tamanho do proximo bloco e guardo em %r9 já
+		cmpq $0, (%r11)		# comparo se o bit de dirty é zero tbm
+		je fundir
+		# se nao pulo o r8 para o proximo bloco
+		movq 16(%r8), %r9
+		addq $16, %r9
+		addq %r9, %r8
+		jmp loop
+
+
+	fundir:
+		addq $16, %r9		# somo os bits de gerenciamente 
+		addq %r9, 16(%r8)	# somo o tamanho do dois blocos
+		# agora r8 deve receber o proximo bloco
+		movq 16(%r8), %r9	# tamanho do bloco atual
+		addq $16, %r9		# mais os bits de gerenciamento
+		addq %r9, %r8		# agora, teoricamente, r8 possui o proximo bloco
+		jmp loop
+		
 
 _start:
     movq $1, TESTE
