@@ -91,8 +91,8 @@ fusao:      # fazer fusao de nos livres, se a espaços consectuvos vazios, junta
 	loop_fusao:
         cmpq TOPO_HEAP, %r8 # condicõa de parada
         je fim_fusao
-		cmpq $0, (%r8)		# comparo se o bit de dirty é zero
-		je verifica_fusao
+	cmpq $0, (%r8)		# comparo se o bit de dirty é zero
+	je verifica_fusao
 
         # se nao puloa para o proximo bloco
 		movq 8(%r8), %r9
@@ -108,7 +108,7 @@ fusao:      # fazer fusao de nos livres, se a espaços consectuvos vazios, junta
 		addq $16, %r9		# somo os 16 bytes de gerenciamento
 		addq %r9, %r11		# teoricamente, r11 possui agora o inicio do proximo bloco
 		movq 8(%r11), %r9	# o tamanho do proximo bloco e guardo em %r9 já
-        addq $16, %r9       # r9 = tamanho do bloco mais bits de gerenciamento
+        	addq $16, %r9       # r9 = tamanho do bloco mais bits de gerenciamento
 		cmpq $0, (%r11)		# comparo se o bit de dirty é zero tbm
 		je fundir
 
@@ -120,7 +120,7 @@ fusao:      # fazer fusao de nos livres, se a espaços consectuvos vazios, junta
 
 
 	fundir:
-        # ao fundir, ele continua no mesmo bloco que estava!
+        	# ao fundir, ele continua no mesmo bloco que estava!
 		addq %r9, 8(%r8)	# somo o tamanho do dois blocos
 		jmp loop_fusao
 	
