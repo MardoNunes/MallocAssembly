@@ -4,8 +4,7 @@
     TOPO_HEAP: .quad 0      # o topo é o final do heap
     END_A: .quad 0          # guarda o endereço do primeiro bloco alocado
     END_B: .quad 0
-    TESTE: .quad 0
-    str1: .string "Tamanho da heap: % s \n"
+    END_C: .quad 0
 
 .section .text
 .globl _start
@@ -51,8 +50,11 @@ liberaMem:
     movq $0, -16(%r10)      # indico que o bloco está livre apenas
     movq -16(%r10), %rbx
 
-    popq %rbp
-    ret
+    jmp fusao
+
+    fim_libera_memoria:
+        popq %rbp
+        ret
 
 
 
@@ -80,51 +82,54 @@ alocaMem:
     popq %rbp
     ret
 
-fusao:
-# fazer fusao de nos livres, se a espaços consectuvos vazios, juntar os dois como um
-# a cada liberação chamar a fusao e vereficar 
-# e implementar a fusao
+fusao:      # fazer fusao de nos livres, se a espaços consectuvos vazios, juntar os dois como um
+
 	pushq %rbp
 	movq %rsp, %rbp
 
 	movq INICIO_HEAP, %r8	# passo o comeco da heap
-	loop:
+	loop_fusao:
+        cmpq TOPO_HEAP, %r8 # condicõa de parada
+        je fim_fusao
 		cmpq $0, (%r8)		# comparo se o bit de dirty é zero
-		je verifica
-		movq 16(%r8), %r9
+		je verifica_fusao
+
+        # se nao puloa para o proximo bloco
+		movq 8(%r8), %r9
 		addq $16, %r9
 		addq %r9, %r8
-		jmp loop
+		jmp loop_fusao
 
 
 
-	verifica:
+	verifica_fusao:
 		movq %r8, %r11		# pego o endereco de r8
-		movq 16(%r11), %r9	# pego o tamanho do bloco atual para pular
+		movq 8(%r11), %r9	# pego o tamanho do bloco atual para pular
 		addq $16, %r9		# somo os 16 bytes de gerenciamento
 		addq %r9, %r11		# teoricamente, r11 possui agora o inicio do proximo bloco
-		movq 16(%r11), %r9	# o tamanho do proximo bloco e guardo em %r9 já
+		movq 8(%r11), %r9	# o tamanho do proximo bloco e guardo em %r9 já
+        addq $16, %r9       # r9 = tamanho do bloco mais bits de gerenciamento
 		cmpq $0, (%r11)		# comparo se o bit de dirty é zero tbm
 		je fundir
+
 		# se nao pulo o r8 para o proximo bloco
-		movq 16(%r8), %r9
+		movq 8(%r8), %r9
 		addq $16, %r9
 		addq %r9, %r8
-		jmp loop
+		jmp loop_fusao
 
 
 	fundir:
-		addq $16, %r9		# somo os bits de gerenciamente 
-		addq %r9, 16(%r8)	# somo o tamanho do dois blocos
-		# agora r8 deve receber o proximo bloco
-		movq 16(%r8), %r9	# tamanho do bloco atual
-		addq $16, %r9		# mais os bits de gerenciamento
-		addq %r9, %r8		# agora, teoricamente, r8 possui o proximo bloco
-		jmp loop
-		
+        # ao fundir, ele continua no mesmo bloco que estava!
+		addq %r9, 8(%r8)	# somo o tamanho do dois blocos
+		jmp loop_fusao
+	
+    fim_fusao:
+        pop %rbp 
+        jmp fim_libera_memoria
 
 _start:
-    movq $1, TESTE
+    
 
     call iniciaAlocador 
 
@@ -134,12 +139,27 @@ _start:
     addq $8, %rsp
     movq %rax, END_A       # guarda o endereco do primeiro bloco alocado
 
-    movq $50, %rbx           # empilha num_bytes
+    movq $100, %rbx           # empilha num_bytes
     pushq %rbx  
     call alocaMem
     addq $8, %rsp
     movq %rax, END_B       # guarda o endereco do primeiro bloco alocado
 
+
+    movq $75, %rbx           
+    pushq %rbx  
+    call alocaMem
+    addq $8, %rsp
+    movq %rax, END_C
+
+
+    movq END_A, %rbx
+    push %rbx
+    call liberaMem
+    addq $8, %rsp
+    movq %rax, END_A
+
+    
 
     movq END_B, %rbx
     push %rbx
@@ -147,6 +167,7 @@ _start:
     addq $8, %rsp
     movq %rax, END_B
 
+    
 
     call finalizaAlocador
     
