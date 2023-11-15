@@ -58,9 +58,47 @@ liberaMem:
 
 
 
-alocaMem:
+next_fit:
     push %rbp
     movq %rsp, %rbp
+    movq 16(%rbp), %rbx     # num_bytes em rbx
+
+    # comparar se a heap esta vazinha, se sim, aloca um novo espaço
+    movq TOPO_HEAP, %r11
+    cmpq INICIO_HEAP, %r11
+    je alocaMem
+
+    # se não, vereficar se existe o bloco com tamanho igual ou maior ao solicitado
+        # e alocar nesse bloco
+
+    movq INICIO_HEAP, %r8
+    loop_next_fit:
+        cmpq TOPO_HEAP, %r8         # condicõa de parada
+        je else
+	    cmpq 8(%r8), %rbx		    # comparo o tamanho do bloco com oq to procurando
+        jg pula_bloco_nexFit
+        movq $1, (%r8)              # digo que está ocupado
+        addq $16, %r8               # pulo os bit de gerenciamento para devolver so o endereco bloco
+        movq %r8, %rax              # guardo o endereço do bloco para retornar
+        jmp fim_next_fit
+
+        pula_bloco_nexFit:          # se nao puloa para o proximo bloco
+		    movq 8(%r8), %r9
+		    addq $16, %r9
+		    addq %r9, %r8
+		    jmp loop_next_fit
+
+
+    
+    else:       # se nao exister um bloco maior ou igual, alocar no fim da heap!
+        jmp alocaMem        #faço a locação padrão
+
+    fim_next_fit:
+        pop %rbp
+        ret
+
+
+alocaMem:
     movq 16(%rbp), %rbx     # jogo o num_bytes passado como parametr em rbx
 
     movq $12, %rax
@@ -76,22 +114,22 @@ alocaMem:
 
     # atualizo o topo
     addq $16, %r10
-    movq %r10, %rax
+    addq %r10, %rax
     movq %rbx, TOPO_HEAP
 
-    popq %rbp
-    ret
+    
+    jmp fim_next_fit
 
 fusao:      # fazer fusao de nos livres, se a espaços consectuvos vazios, juntar os dois como um
 
 	pushq %rbp
 	movq %rsp, %rbp
 
-	movq INICIO_HEAP, %r8	# passo o comeco da heap
+	movq INICIO_HEAP, %r8	    # passo o comeco da heap
 	loop_fusao:
-        cmpq TOPO_HEAP, %r8 # condicõa de parada
+        cmpq TOPO_HEAP, %r8     # condicõa de parada
         je fim_fusao
-	cmpq $0, (%r8)		# comparo se o bit de dirty é zero
+	    cmpq $0, (%r8)		    # comparo se o bit de dirty é zero
 	je verifica_fusao
 
         # se nao puloa para o proximo bloco
@@ -135,20 +173,20 @@ _start:
 
     movq $50, %rbx           # empilha num_bytes
     pushq %rbx  
-    call alocaMem
+    call next_fit
     addq $8, %rsp
     movq %rax, END_A       # guarda o endereco do primeiro bloco alocado
 
     movq $100, %rbx           # empilha num_bytes
     pushq %rbx  
-    call alocaMem
+    call next_fit
     addq $8, %rsp
     movq %rax, END_B       # guarda o endereco do primeiro bloco alocado
 
 
     movq $75, %rbx           
     pushq %rbx  
-    call alocaMem
+    call next_fit
     addq $8, %rsp
     movq %rax, END_C
 
