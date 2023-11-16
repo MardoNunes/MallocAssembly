@@ -53,12 +53,13 @@ liberaMem:
     jmp fusao
 
     fim_libera_memoria:
+        movq 16(%rbp), %rax     # retorno o end doq foi liberado
         popq %rbp
         ret
 
 
 
-next_fit:
+firts_fit:
     push %rbp
     movq %rsp, %rbp
     movq 16(%rbp), %rbx     # num_bytes em rbx
@@ -72,28 +73,30 @@ next_fit:
         # e alocar nesse bloco
 
     movq INICIO_HEAP, %r8
-    loop_next_fit:
+    loop_first_fit:
         cmpq TOPO_HEAP, %r8         # condicõa de parada
         je else
-	    cmpq 8(%r8), %rbx		    # comparo o tamanho do bloco com oq to procurando
-        jg pula_bloco_nexFit
+	    cmpq $1, (%r8)		        # vejo se está livre
+        je pula_bloco_FirstFit
+        cmpq 8(%rbp), %rbx          # comparo o tamanho, pra ver se cabe
+        jg pula_bloco_FirstFit
         movq $1, (%r8)              # digo que está ocupado
         addq $16, %r8               # pulo os bit de gerenciamento para devolver so o endereco bloco
         movq %r8, %rax              # guardo o endereço do bloco para retornar
-        jmp fim_next_fit
+        jmp fim_first_fit
 
-        pula_bloco_nexFit:          # se nao puloa para o proximo bloco
+        pula_bloco_FirstFit:          # se nao puloa para o proximo bloco
 		    movq 8(%r8), %r9
 		    addq $16, %r9
 		    addq %r9, %r8
-		    jmp loop_next_fit
+		    jmp loop_first_fit
 
 
     
     else:       # se nao exister um bloco maior ou igual, alocar no fim da heap!
         jmp alocaMem        #faço a locação padrão
 
-    fim_next_fit:
+    fim_first_fit:
         pop %rbp
         ret
 
@@ -118,7 +121,7 @@ alocaMem:
     movq %rbx, TOPO_HEAP
 
     
-    jmp fim_next_fit
+    jmp fim_first_fit
 
 fusao:      # fazer fusao de nos livres, se a espaços consectuvos vazios, juntar os dois como um
 
@@ -173,27 +176,27 @@ _start:
 
     movq $50, %rbx           # empilha num_bytes
     pushq %rbx  
-    call next_fit
+    call firts_fit
     addq $8, %rsp
     movq %rax, END_A       # guarda o endereco do primeiro bloco alocado
 
     movq $100, %rbx           # empilha num_bytes
     pushq %rbx  
-    call next_fit
+    call firts_fit
     addq $8, %rsp
     movq %rax, END_B       # guarda o endereco do primeiro bloco alocado
 
 
     movq $75, %rbx           
     pushq %rbx  
-    call next_fit
+    call firts_fit
     addq $8, %rsp
     movq %rax, END_C
 
 
     movq END_A, %rbx
     push %rbx
-    call liberaMem
+    call liberaMem   
     addq $8, %rsp
     movq %rax, END_A
 
