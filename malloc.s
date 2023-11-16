@@ -114,7 +114,7 @@ alocaMem:
 
     # atualizo o topo
     addq $16, %r10
-    addq %r10, %rax
+    movq %r10, %rax
     movq %rbx, TOPO_HEAP
 
     
