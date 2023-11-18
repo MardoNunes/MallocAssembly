@@ -6,6 +6,11 @@
     END_B: .quad 0
     END_C: .quad 0
 
+	BYTE_LIVRE: .string "-"
+    	BYTE_OCUPADO: .string "+"
+    	CHAR_LINHA: .string "\n"
+    	STR_GERENCIAL: .string "################"	
+
 .section .text
 .globl _start
 
@@ -169,6 +174,60 @@ fusao:      # fazer fusao de nos livres, se a espaços consectuvos vazios, junta
         pop %rbp 
         jmp fim_libera_memoria
 
+imprime_mapa:
+    pushq %rbp
+    movq %rsp, %rbp
+
+    subq $8, %rsp               # aloca espaço para variável local
+    movq INICIO_HEAP, %r12         # armazena valor do inicio da heap
+    movq TOPO_HEAP, %r10         # armazena valor do fim da heap
+    movq %r10, -8(%rbp)         
+
+    while_bloco:
+        cmpq -8(%rbp), %r12             # verifica se o ponteiro chegou ao fim da heap
+        jge fim_imprime
+        movq $STR_GERENCIAL, %rsi    # armazena mensagem de gerenciamento
+        movq $16, %rdx              # armazena valores para syscall write
+        movq $1, %rax               
+        movq $1, %rdi               
+        syscall                     # chama a syscall write
+        
+        movq (%r12), %r13           # pega o bit de ocupacao do bloco
+        movq 8(%r12), %r14          # pega o tamanho do bloco
+        movq $0, %r15               # contador i
+        while_imprime:
+        cmpq %r14, %r15             # imprime o tamanho do bloco em caracteres ate o tamanho do bloco
+        jge fim_while_imprime
+            movq $1, %rdi           # argumentos para o write
+            movq $1, %rdx
+            movq $1, %rax
+            cmpq $0, %r13           # se 0 imprime BYTE_LIVRE, se 1 imprime BYTE_OCUPADO
+            jne imprime_else        
+                movq $BYTE_LIVRE, %rsi       # imprime BYTE_LIVRE "-"
+                jmp fim_if          # fim imprime_if             
+            imprime_else:
+                movq $BYTE_OCUPADO, %rsi     # imprime BYTE_OCUPADO "+"
+            fim_if:
+                syscall
+                addq $1, %r15                   # r15 (i)++
+                jmp while_imprime               # volta para o while_imprime
+            
+        fim_while_imprime:
+            addq $16, %r12                      
+            addq %r14, %r12                     # atualiza o ponteiro para o proximo bloco
+            jmp while_bloco
+        
+    fim_imprime:
+        movq $CHAR_LINHA, %rsi        # imprime charLinha "_"
+        movq $1, %rdx                # argumentos para o write 
+        movq $1, %rax
+        movq $1, %rdi
+        syscall
+
+        addq $8, %rsp
+        popq %rbp
+        ret	
+
 _start:
     
 
@@ -209,7 +268,7 @@ _start:
     movq %rax, END_B
 
     
-
+	call imprime_mapa
     call finalizaAlocador
     
     movq $60, %rax
