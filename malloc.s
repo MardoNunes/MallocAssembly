@@ -5,6 +5,8 @@
     END_A: .quad 0          # guarda o endereço do primeiro bloco alocado
     END_B: .quad 0
     END_C: .quad 0
+    END_D: .quad 0
+    END_E: .quad 0
 
 	BYTE_LIVRE: .string "-"
     	BYTE_OCUPADO: .string "+"
@@ -190,7 +192,7 @@ imprime_mapa:
         movq $16, %rdx              # armazena valores para syscall write
         movq $1, %rax               
         movq $1, %rdi               
-        syscall                     # chama a syscall write
+        syscall                     
         
         movq (%r12), %r13           # pega o bit de ocupacao do bloco
         movq 8(%r12), %r14          # pega o tamanho do bloco
@@ -204,17 +206,17 @@ imprime_mapa:
             cmpq $0, %r13           # se 0 imprime BYTE_LIVRE, se 1 imprime BYTE_OCUPADO
             jne imprime_else        
                 movq $BYTE_LIVRE, %rsi       # imprime BYTE_LIVRE "-"
-                jmp fim_if          # fim imprime_if             
+                jmp fim_if                      
             imprime_else:
                 movq $BYTE_OCUPADO, %rsi     # imprime BYTE_OCUPADO "+"
             fim_if:
                 syscall
                 addq $1, %r15                   # r15 (i)++
-                jmp while_imprime               # volta para o while_imprime
+                jmp while_imprime               
             
         fim_while_imprime:
             addq $16, %r12                      
-            addq %r14, %r12                     # atualiza o ponteiro para o proximo bloco
+            addq %r14, %r12                   
             jmp while_bloco
         
     fim_imprime:
@@ -252,22 +254,40 @@ _start:
     addq $8, %rsp
     movq %rax, END_C
 
+    movq $90, %rbx           
+    pushq %rbx  
+    call firts_fit
+    addq $8, %rsp
+    movq %rax, END_D
+
+    movq $15, %rbx           
+    pushq %rbx  
+    call firts_fit
+    addq $8, %rsp
+    movq %rax, END_E
+
 
     movq END_A, %rbx
     push %rbx
     call liberaMem   
     addq $8, %rsp
-    movq %rax, END_A
+    # movq %rax, END_A
 
-    
 
     movq END_B, %rbx
     push %rbx
     call liberaMem
     addq $8, %rsp
-    movq %rax, END_B
+    # movq %rax, END_B
 
-    
+    movq END_D, %rbx
+    push %rbx
+    call liberaMem
+    addq $8, %rsp
+    # movq %rax, END_D
+
+   
+
 	call imprime_mapa
     call finalizaAlocador
     
