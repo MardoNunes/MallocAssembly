@@ -7,11 +7,16 @@
     END_C: .quad 0
     END_D: .quad 0
     END_E: .quad 0
+   
 
 	BYTE_LIVRE: .string "-"
     	BYTE_OCUPADO: .string "+"
     	CHAR_LINHA: .string "\n"
-    	STR_GERENCIAL: .string "################"	
+    	STR_GERENCIAL: .string "################"
+        PRIMERA_ALOCAO: .string "PRIMEIROS MALLOC"
+        PRIMERIRA_LIBERACAO: .string "PRIMEIROS FREE"
+        NOVAS_ALOCACOES: .string "NOVOS MALLOC"	
+        NOVAS_LIBERACOES: .string "NOVOS FREE"
 
 .section .text
 .globl _start
@@ -85,7 +90,7 @@ firts_fit:
         je else
 	    cmpq $1, (%r8)		        # vejo se está livre
         je pula_bloco_FirstFit
-        cmpq 8(%rbp), %rbx          # comparo o tamanho, pra ver se cabe
+        cmpq 8(%r8), %rbx          # comparo o tamanho, pra ver se cabe
         jg pula_bloco_FirstFit
         movq $1, (%r8)              # digo que está ocupado
         addq $16, %r8               # pulo os bit de gerenciamento para devolver so o endereco bloco
@@ -155,6 +160,8 @@ fusao:      # fazer fusao de nos livres, se a espaços consectuvos vazios, junta
 		movq 8(%r11), %r9	# pego o tamanho do bloco atual para pular
 		addq $16, %r9		# somo os 16 bytes de gerenciamento
 		addq %r9, %r11		# teoricamente, r11 possui agora o inicio do proximo bloco
+        cmpq %r11, TOPO_HEAP    # compara se cheguei no final da heap nesse trecho
+        je fim_fusao            # se sim, encerra
 		movq 8(%r11), %r9	# o tamanho do proximo bloco e guardo em %r9 já
         	addq $16, %r9       # r9 = tamanho do bloco mais bits de gerenciamento
 		cmpq $0, (%r11)		# comparo se o bit de dirty é zero tbm
@@ -230,65 +237,208 @@ imprime_mapa:
         popq %rbp
         ret	
 
+primeira_alocacao:
+    pushq %rbp
+    movq %rsp, %rbp
+       
+    movq $PRIMERA_ALOCAO, %rsi    
+    movq $16, %rdx             
+    movq $1, %rax               
+    movq $1, %rdi               
+    syscall
+
+    movq $CHAR_LINHA, %rsi   
+    movq $16, %rdx              
+    movq $1, %rax               
+    movq $1, %rdi               
+    syscall
+
+    popq %rbp
+    ret                
+
+primeiros_liberacoes:
+    pushq %rbp
+    movq %rsp, %rbp
+       
+    movq $PRIMERIRA_LIBERACAO, %rsi    
+    movq $16, %rdx             
+    movq $1, %rax               
+    movq $1, %rdi               
+    syscall
+
+    movq $CHAR_LINHA, %rsi   
+    movq $16, %rdx              
+    movq $1, %rax               
+    movq $1, %rdi               
+    syscall
+
+    popq %rbp
+    ret 
+
+
+novas_alocacoes:
+    pushq %rbp
+    movq %rsp, %rbp
+       
+    movq $NOVAS_ALOCACOES, %rsi    
+    movq $16, %rdx             
+    movq $1, %rax               
+    movq $1, %rdi               
+    syscall
+
+    movq $CHAR_LINHA, %rsi   
+    movq $16, %rdx              
+    movq $1, %rax               
+    movq $1, %rdi               
+    syscall
+
+    popq %rbp
+    ret
+
+novas_liberacoes:
+    pushq %rbp
+    movq %rsp, %rbp
+       
+    movq $NOVAS_LIBERACOES, %rsi    
+    movq $16, %rdx             
+    movq $1, %rax               
+    movq $1, %rdi               
+    syscall
+
+    movq $CHAR_LINHA, %rsi   
+    movq $16, %rdx              
+    movq $1, %rax               
+    movq $1, %rdi               
+    syscall
+
+    popq %rbp
+    ret
+
 _start:
     
 
     call iniciaAlocador 
+    call imprime_mapa
 
-    movq $50, %rbx           # empilha num_bytes
+    call primeira_alocacao
+    movq $100, %rbx          
     pushq %rbx  
     call firts_fit
     addq $8, %rsp
-    movq %rax, END_A       # guarda o endereco do primeiro bloco alocado
+    movq %rax, END_A
 
-    movq $100, %rbx           # empilha num_bytes
+    call imprime_mapa       
+
+    movq $130, %rbx
     pushq %rbx  
     call firts_fit
     addq $8, %rsp
-    movq %rax, END_B       # guarda o endereco do primeiro bloco alocado
+    movq %rax, END_B       
 
+    call imprime_mapa
 
-    movq $75, %rbx           
+    movq $120, %rbx           
     pushq %rbx  
     call firts_fit
     addq $8, %rsp
     movq %rax, END_C
 
-    movq $90, %rbx           
+    call imprime_mapa
+
+    movq $110, %rbx           
     pushq %rbx  
     call firts_fit
     addq $8, %rsp
     movq %rax, END_D
 
-    movq $15, %rbx           
-    pushq %rbx  
-    call firts_fit
-    addq $8, %rsp
-    movq %rax, END_E
+    call imprime_mapa
 
-
-    movq END_A, %rbx
+   # liberação de memoria
+    call primeiros_liberacoes
+    movq END_B, %rbx
     push %rbx
     call liberaMem   
     addq $8, %rsp
-    # movq %rax, END_A
-
-
-    movq END_B, %rbx
-    push %rbx
-    call liberaMem
-    addq $8, %rsp
-    # movq %rax, END_B
+    movq %rax, END_B
+    
+    call imprime_mapa
 
     movq END_D, %rbx
     push %rbx
     call liberaMem
     addq $8, %rsp
-    # movq %rax, END_D
+    movq %rax, END_D
 
-   
+    call imprime_mapa
 
-	call imprime_mapa
+    # alocação novamente
+    call novas_alocacoes
+    movq $50, %rbx
+    pushq %rbx  
+    call firts_fit
+    addq $8, %rsp
+    movq %rax, END_B 
+
+    call imprime_mapa
+
+    movq $90, %rbx
+    pushq %rbx  
+    call firts_fit
+    addq $8, %rsp
+    movq %rax, END_D
+
+    call imprime_mapa
+
+    movq $40, %rbx
+    pushq %rbx  
+    call firts_fit
+    addq $8, %rsp
+    movq %rax, END_E
+
+    call imprime_mapa
+
+    # liberações novamente
+    call novas_liberacoes
+    movq END_C, %rbx
+    push %rbx
+    call liberaMem   
+    addq $8, %rsp
+    movq %rax, END_C
+
+    call imprime_mapa
+
+    movq END_A, %rbx
+    push %rbx
+    call liberaMem   
+    addq $8, %rsp
+    movq %rax, END_A
+
+    call imprime_mapa
+
+    movq END_B, %rbx
+    push %rbx
+    call liberaMem   
+    addq $8, %rsp
+    movq %rax, END_B
+
+    call imprime_mapa
+
+    movq END_D, %rbx
+    push %rbx
+    call liberaMem   
+    addq $8, %rsp
+    movq %rax, END_D
+
+    call imprime_mapa
+
+    movq END_E, %rbx
+    push %rbx
+    call liberaMem   
+    addq $8, %rsp
+    movq %rax, END_E
+
+    call imprime_mapa
+
     call finalizaAlocador
     
     movq $60, %rax
